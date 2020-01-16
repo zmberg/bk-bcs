@@ -30,7 +30,9 @@ func (store *managerStore) SaveVersion(version *types.Version) error {
 
 	blog.Info("save version(id:%s)", version.ID)
 
-	version.Name = strconv.FormatInt(time.Now().UnixNano(), 10)
+	if version.Name=="" {
+		version.Name = strconv.FormatInt(time.Now().UnixNano(), 10)
+	}
 
 	data, err := json.Marshal(version)
 	if err != nil {

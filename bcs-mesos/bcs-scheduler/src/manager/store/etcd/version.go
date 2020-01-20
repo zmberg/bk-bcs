@@ -32,7 +32,9 @@ func getNamespaceByVersion(runAs, versionId string) string {
 }
 
 func (store *managerStore) SaveVersion(version *types.Version) error {
-	version.Name = strconv.FormatInt(time.Now().UnixNano(), 10)
+	if version.Name=="" {
+		version.Name = strconv.FormatInt(time.Now().UnixNano(), 10)
+	}
 	runAs := version.RunAs
 	if "" == runAs {
 		runAs = defaultRunAs

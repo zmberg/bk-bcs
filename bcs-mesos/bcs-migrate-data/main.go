@@ -28,6 +28,7 @@ import (
 )
 
 type Options struct {
+	conf.FileConfig
 	conf.ZkConfig
 	conf.LogConfig
 	KubeConfig string `json:"kubeconfig" value:"" usage:"kube config for custom resource feature and etcd storage"`
@@ -56,7 +57,7 @@ func main() {
 		blog.Errorf("new etcd store failed: %s", err.Error())
 		os.Exit(1)
 	}
-	zkStore.InitCacheMgr(false)
+	etcdStore.InitCacheMgr(false)
 	blog.Infof("connect kube-apiserver %s success", op.KubeConfig)
 
 	//sync framework
@@ -162,11 +163,14 @@ func syncApplication(zkStore store.Store, etcdStore store.Store) error {
 				return fmt.Errorf("FetchVersion(%s:%s:%s) failed: %s", runAs,appId,no,err.Error())
 			}
 			err = etcdStore.SaveVersion(version)
+			if err != nil {
+				return fmt.Errorf("SaveVersion(%s:%s:%s) failed: %s", runAs,appId,no,err.Error())
+			}
 			cversion,err := etcdStore.FetchVersion(runAs,appId,no)
 			if err != nil {
 				return fmt.Errorf("FetchVersion(%s:%s:%s) failed: %s", runAs,appId,no,err.Error())
 			}
-			if reflect.DeepEqual(version,cversion) {
+			if !reflect.DeepEqual(version,cversion) {
 				return fmt.Errorf("sync Version(%s:%s:%s) failed", runAs,appId,no)
 			}
 			blog.Infof("SaveVersion(%s:%s:%s) success",runAs,appId,no)
@@ -181,7 +185,7 @@ func syncApplication(zkStore store.Store, etcdStore store.Store) error {
 		if err != nil {
 			return fmt.Errorf("FetchApplication(%s:%s) failed: %s", app.RunAs, app.ID, err.Error())
 		}
-		if reflect.DeepEqual(app,capp) {
+		if !reflect.DeepEqual(app,capp) {
 			return fmt.Errorf("sync Application(%s:%s) failed", app.RunAs, app.ID)
 		}
 		blog.Infof("SaveApplication(%s:%s) success", app.RunAs, app.ID)
@@ -200,7 +204,7 @@ func syncApplication(zkStore store.Store, etcdStore store.Store) error {
 			if err != nil {
 				return fmt.Errorf("FetchTaskGroup(%s) failed: %s", taskg.ID, err.Error())
 			}
-			if reflect.DeepEqual(taskg,ctaskg) {
+			if !reflect.DeepEqual(taskg,ctaskg) {
 				if app.ID!=capp.ID {
 					return fmt.Errorf("sync TaskGroup(%s) failed", taskg.ID)
 				}
@@ -229,7 +233,7 @@ func syncAgent(zkStore store.Store, etcdStore store.Store) error {
 		if err != nil {
 			return fmt.Errorf("FetchFrameworkID failed: %s", err.Error())
 		}
-		if reflect.DeepEqual(agent,cagent) {
+		if !reflect.DeepEqual(agent,cagent) {
 			return fmt.Errorf("sync agent %s failed",agent.Key)
 		}
 		blog.Infof("SaveAgent(%s) success", agent.Key)
@@ -252,7 +256,7 @@ func syncAgent(zkStore store.Store, etcdStore store.Store) error {
 		if err != nil {
 			return fmt.Errorf("FetchAgentSetting %s failed: %s", no, err.Error())
 		}
-		if reflect.DeepEqual(setting,csetting) {
+		if !reflect.DeepEqual(setting,csetting) {
 			return fmt.Errorf("sync AgentSetting %s failed",no)
 		}
 		blog.Infof("SaveAgentSetting(%s) success", no)
@@ -277,7 +281,7 @@ func syncConfigmap(zkStore store.Store, etcdStore store.Store) error {
 		if err != nil {
 			return fmt.Errorf("FetchConfigMap(%s:%s) failed: %s", cfg.NameSpace,cfg.Name,err.Error())
 		}
-		if reflect.DeepEqual(cfg,ccfg) {
+		if !reflect.DeepEqual(cfg,ccfg) {
 			return fmt.Errorf("sync Configmap(%s:%s) failed",cfg.NameSpace,cfg.Name)
 		}
 		blog.Infof("SaveConfigMap(%s:%s) success", cfg.NameSpace,cfg.Name)
@@ -302,7 +306,7 @@ func syncSecret(zkStore store.Store, etcdStore store.Store) error {
 		if err != nil {
 			return fmt.Errorf("FetchSecret(%s:%s) failed: %s", sct.NameSpace,sct.Name,err.Error())
 		}
-		if reflect.DeepEqual(sct,csct) {
+		if !reflect.DeepEqual(sct,csct) {
 			return fmt.Errorf("sync Secret(%s:%s) failed",sct.NameSpace,sct.Name)
 		}
 		blog.Infof("SaveSecret(%s:%s) success", sct.NameSpace,sct.Name)
@@ -327,7 +331,7 @@ func syncService(zkStore store.Store, etcdStore store.Store) error {
 		if err != nil {
 			return fmt.Errorf("FetchService(%s:%s) failed: %s", svc.NameSpace,svc.Name,err.Error())
 		}
-		if reflect.DeepEqual(svc,csvc) {
+		if !reflect.DeepEqual(svc,csvc) {
 			return fmt.Errorf("sync Service(%s:%s) failed",svc.NameSpace,svc.Name)
 		}
 		blog.Infof("SaveService(%s:%s) success", svc.NameSpace,svc.Name)
@@ -345,7 +349,7 @@ func syncService(zkStore store.Store, etcdStore store.Store) error {
 		if err != nil {
 			return fmt.Errorf("FetchEndpoint(%s:%s) failed: %s", end.NameSpace,end.Name,err.Error())
 		}
-		if reflect.DeepEqual(end,cend) {
+		if !reflect.DeepEqual(end,cend) {
 			return fmt.Errorf("sync Endpoint(%s:%s) failed",end.NameSpace,end.Name)
 		}
 		blog.Infof("SaveEndpoint(%s:%s) success", end.NameSpace,end.Name)
@@ -371,7 +375,7 @@ func syncDeployment(zkStore store.Store, etcdStore store.Store) error {
 		if err != nil {
 			return fmt.Errorf("FetchDeployment(%s:%s) failed: %s", ns,name,err.Error())
 		}
-		if reflect.DeepEqual(deployment,cdeployment) {
+		if !reflect.DeepEqual(deployment,cdeployment) {
 			return fmt.Errorf("sync Deployment(%s:%s) failed",ns,name)
 		}
 		blog.Infof("SaveDeployment(%s:%s) success", ns,name)
@@ -397,7 +401,7 @@ func syncAdmission(zkStore store.Store, etcdStore store.Store) error {
 		if err != nil {
 			return fmt.Errorf("FetchAdmissionWebhook(%s:%s) failed: %s", ns,name,err.Error())
 		}
-		if reflect.DeepEqual(cadmission,admission) {
+		if !reflect.DeepEqual(cadmission,admission) {
 			return fmt.Errorf("sync Admission(%s:%s) failed",ns,name)
 		}
 		blog.Infof("SaveAdmissionWebhook(%s:%s) success", ns,name)

@@ -14,9 +14,11 @@
 package etcd
 
 import (
+	"bk-bcs/bcs-common/common/blog"
 	mstore "bk-bcs/bcs-mesos/bcs-scheduler/src/manager/store"
 	"bk-bcs/bcs-mesos/bcs-scheduler/src/types"
 	"bk-bcs/bcs-mesos/pkg/apis/bkbcs/v2"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +34,7 @@ func (store *managerStore) CheckTaskExist(task *types.Task) (string, bool) {
 }
 
 func (store *managerStore) SaveTask(task *types.Task) error {
+	now := time.Now().UnixNano()
 	ns, _ := types.GetRunAsAndAppIDbyTaskID(task.ID)
 	client := store.BkbcsClient.Tasks(ns)
 	v2Task := &v2.Task{
@@ -62,6 +65,7 @@ func (store *managerStore) SaveTask(task *types.Task) error {
 
 	task.ResourceVersion = v2Task.ResourceVersion
 	saveCacheTask(task)
+	blog.Warnf("save task(%s) time(%d)", task.ID, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 
@@ -85,6 +89,7 @@ func (store *managerStore) SaveTask(task *types.Task) error {
 }*/
 
 func (store *managerStore) DeleteTask(taskId string) error {
+	now := time.Now().UnixNano()
 	ns, _ := types.GetRunAsAndAppIDbyTaskID(taskId)
 	client := store.BkbcsClient.Tasks(ns)
 	err := client.Delete(taskId, &metav1.DeleteOptions{})
@@ -93,6 +98,7 @@ func (store *managerStore) DeleteTask(taskId string) error {
 	}
 
 	deleteCacheTask(taskId)
+	blog.Warnf("delete task(%s) time(%d)", taskId, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 

@@ -302,6 +302,7 @@ func (s *Scheduler) checkApplicationChange(runAs, appId, taskGroupStatus string,
 			blog.Error("status report: save application(%s.%s) information into db failed! err:%s", app.RunAs, app.ID, err.Error())
 			return
 		}
+		blog.Infof("save application(%s.%s) success",app.RunAs,app.ID)
 	}
 
 	return

@@ -18,7 +18,9 @@ package v2
 import (
 	v2 "bk-bcs/bcs-mesos/pkg/apis/bkbcs/v2"
 	scheme "bk-bcs/bcs-mesos/pkg/client/internalclientset/scheme"
+	"time"
 
+	"bk-bcs/bcs-common/common/blog"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -108,6 +110,7 @@ func (c *taskGroups) Create(taskGroup *v2.TaskGroup) (result *v2.TaskGroup, err 
 
 // Update takes the representation of a taskGroup and updates it. Returns the server's representation of the taskGroup, and an error, if there is any.
 func (c *taskGroups) Update(taskGroup *v2.TaskGroup) (result *v2.TaskGroup, err error) {
+	now := time.Now().UnixNano()
 	result = &v2.TaskGroup{}
 	err = c.client.Put().
 		Namespace(c.ns).
@@ -116,6 +119,7 @@ func (c *taskGroups) Update(taskGroup *v2.TaskGroup) (result *v2.TaskGroup, err 
 		Body(taskGroup).
 		Do().
 		Into(result)
+	blog.Warnf("kube-apiserver update taskgroup(%s) time(%d)", taskGroup.Name, (time.Now().UnixNano()-now)/1000/1000)
 	return
 }
 

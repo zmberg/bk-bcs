@@ -111,6 +111,7 @@ func DataCheckManage(mgr *DataCheckMgr, doRecover bool) {
 }
 
 func (mgr *DataCheckMgr) doCheck() {
+	return
 
 	if mgr.openCheck == false {
 		blog.Info("data checker: opencheck is false, do nothing")

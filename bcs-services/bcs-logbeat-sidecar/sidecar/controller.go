@@ -276,6 +276,7 @@ func (s *SidecarController) getContainerLogConfKey(containerId string) string {
 func (s *SidecarController) produceContainerLogConf(c *docker.Container) {
 	key := s.getContainerLogConfKey(c.ID)
 	y, ok := s.produceLogConfParameterV2(c)
+	by, _ := yaml.Marshal(y)
 	//the container don't match any BcsLogConfig
 	if !ok {
 		s.Lock()
@@ -290,11 +291,28 @@ func (s *SidecarController) produceContainerLogConf(c *docker.Container) {
 		return
 	}
 
-	logConf := &ContainerLogConf{
+	//if logconfig exist and not changed, then return
+	logConf, ok := s.logConfs[key]
+	if ok {
+		logByte,err := ioutil.ReadFile(logConf.confPath)
+		if err!=nil {
+			blog.Warnf("container %s logconfig %s not exist, then will create it", c.ID)
+			goto Write
+		}
+
+		if string(by)==string(logByte) {
+			blog.Infof("container %s logconfig not changed, then return", c.ID)
+			return
+		}
+		blog.Infof("container %s logconfig changed from(%s) -> to(%s)", c.ID, string(logByte), string(by))
+	}
+
+	//create new logconfig
+	Write:
+	logConf = &ContainerLogConf{
 		containerId: c.ID,
 		confPath:    key,
 	}
-	by, _ := yaml.Marshal(y)
 	blog.Infof("container %s need been collected log, and LogConfig(%s)", c.ID, string(by))
 	f, err := os.Create(logConf.confPath)
 	if err != nil {

@@ -19,6 +19,7 @@ import (
 	"bk-bcs/bcs-mesos/bcs-scheduler/src/types"
 	"bk-bcs/bcs-mesos/pkg/apis/bkbcs/v2"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -34,6 +35,7 @@ func (store *managerStore) CheckTaskGroupExist(taskGroup *types.TaskGroup) (stri
 
 //SaveTaskGroup save task group to store
 func (store *managerStore) SaveTaskGroup(taskGroup *types.TaskGroup) error {
+	now := time.Now().UnixNano()
 	client := store.BkbcsClient.TaskGroups(taskGroup.RunAs)
 	v2Taskgroup := &v2.TaskGroup{
 		TypeMeta: metav1.TypeMeta{
@@ -62,9 +64,9 @@ func (store *managerStore) SaveTaskGroup(taskGroup *types.TaskGroup) error {
 	if err != nil {
 		return err
 	}
-
 	taskGroup.ResourceVersion = v2Taskgroup.ResourceVersion
 	saveCacheTaskGroup(taskGroup)
+	blog.Warnf("save taskgroup(%s) time(%d)", taskGroup.ID, (time.Now().UnixNano()-now)/1000/1000)
 	//save task
 	if taskGroup.Taskgroup != nil {
 		for _, task := range taskGroup.Taskgroup {
@@ -74,7 +76,6 @@ func (store *managerStore) SaveTaskGroup(taskGroup *types.TaskGroup) error {
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -125,6 +126,7 @@ func (store *managerStore) ListTaskGroups(runAs, appID string) ([]*types.TaskGro
 
 //DeleteTaskGroup delete a task group with executor id is taskGroupID
 func (store *managerStore) DeleteTaskGroup(taskGroupID string) error {
+	now := time.Now().UnixNano()
 	taskgroup, err := store.FetchTaskGroup(taskGroupID)
 	if err != nil {
 		return err
@@ -151,6 +153,7 @@ func (store *managerStore) DeleteTaskGroup(taskGroupID string) error {
 	}
 
 	deleteCacheTaskGroup(taskGroupID)
+	blog.Warnf("delete taskgroup(%s) time(%d)", taskgroup.ID, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 

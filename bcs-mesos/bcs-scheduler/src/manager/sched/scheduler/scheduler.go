@@ -806,7 +806,7 @@ func (s *Scheduler) checkRoleChange(currRole string) error {
 	}
 	//current role is master
 	s.Role = currRole
-	go s.store.StartStoreObjectMetrics()
+	//go s.store.StartStoreObjectMetrics()
 	go s.startCheckDeployments()
 	if s.ServiceMgr != nil {
 		var msgOpen ServiceMgrMsg

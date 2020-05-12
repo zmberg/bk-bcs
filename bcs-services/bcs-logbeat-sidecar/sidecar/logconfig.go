@@ -14,6 +14,7 @@
 package sidecar
 
 import (
+	"encoding/json"
 	"reflect"
 	"strings"
 	"time"
@@ -142,19 +143,19 @@ func (s *SidecarController) getPodLogConfigCrd(container *docker.Container, pod 
 	var highLogConfig *bcsv1.BcsLogConfig
 	var highScore int
 	for _, conf := range bcsLogConfs {
-		blog.Infof("BcsLogConfig(%s) check pod(%s) container(%s)", conf.Name, pod.Name, container.ID)
+		blog.Infof("BcsLogConfig(%s.%s) check pod(%s) container(%s)", conf.Namespace, conf.Name, pod.Name, container.ID)
 		score := scoreBcsLogConfig(container, pod, conf)
 		if score > highScore {
 			highScore = score
 			highLogConfig = conf
-			blog.Infof("container %s pod(%s) BcsLogConfig(%s) higher score(%d)",
-				container.ID, pod.Name, highLogConfig.Name, score)
+			blog.Infof("container %s pod(%s) BcsLogConfig(%s.%s) higher score(%d)",
+				container.ID, pod.Name, highLogConfig.Namespace, highLogConfig.Name, score)
 		}
 	}
 	if highLogConfig == nil {
-		blog.Warnf("container %s pod(%s) not match BcsLogConfigs", container.ID, pod.Name)
+		blog.Warnf("container %s pod(%s) not match any BcsLogConfigs", container.ID, pod.Name)
 	} else {
-		blog.Infof("container %s pod(%s) match BcsLogConfig(%s)", container.ID, pod.Name, highLogConfig.Name)
+		blog.Infof("container %s pod(%s) match BcsLogConfig(%s.%s)", container.ID, pod.Name, highLogConfig.Namespace, highLogConfig.Name)
 	}
 
 	return highLogConfig
@@ -244,8 +245,8 @@ func scoreBcsLogConfig(container *docker.Container, pod *corev1.Pod, bcsLogConf 
 	}
 	//not matched, return 0 score
 	if len(bcsLogConf.Spec.ContainerConfs) != 0 && !matched {
-		blog.Warnf("container(%s:%s) pod(%s:%s) not match BcsLogConfig(%s) containerName",
-			container.ID, container.Config.Labels[ContainerLabelK8sContainerName], pod.Name, pod.Name, bcsLogConf.Name)
+		blog.Warnf("container(%s:%s) pod(%s:%s) not match BcsLogConfig(%s.%s) containerName",
+			container.ID, container.Config.Labels[ContainerLabelK8sContainerName], pod.Name, pod.Name, bcsLogConf.Namespace, bcsLogConf.Name)
 		return 0
 	}
 
@@ -258,7 +259,8 @@ func (s *SidecarController) handleChangedBcsLogConfig(obj interface{}) {
 		blog.Errorf("cannot convert to *bcsv1.BcsLogConfig: %v", obj)
 		return
 	}
-	blog.Infof("handle kubernetes AddOrDelete event BcsLogConfig(%s:%s)", conf.Name, conf.Namespace)
+	by,_ := json.Marshal(conf)
+	blog.Infof("handle kubernetes AddOrDelete event BcsLogConfig(%s:%s) Data(%s)", conf.Namespace, conf.Name, string(by))
 	s.syncLogConfs()
 }
 
@@ -268,6 +270,7 @@ func (s *SidecarController) handleUpdatedBcsLogConfig(oldObj, newObj interface{}
 		blog.Errorf("cannot convert to *bcsv1.BcsLogConfig: %v", newObj)
 		return
 	}
-	blog.Infof("handle kubernetes Update event BcsLogConfig(%s:%s)", conf.Name, conf.Namespace)
+	by,_ := json.Marshal(conf)
+	blog.Infof("handle kubernetes Update event BcsLogConfig(%s:%s) Data(%s)", conf.Namespace, conf.Name, string(by))
 	s.syncLogConfs()
 }

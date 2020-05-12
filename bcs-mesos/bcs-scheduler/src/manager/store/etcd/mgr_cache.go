@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"bk-bcs/bcs-common/common/blog"
 	commtypes "bk-bcs/bcs-common/common/types"
@@ -528,7 +529,7 @@ func saveCacheApplication(runAs, appID string, obj *types.Application) error {
 	if !cacheMgr.isOK {
 		return nil
 	}
-
+	now := time.Now().UnixNano()
 	key := runAs + "." + appID
 	app := getCacheAppNode(runAs, appID)
 	if app != nil {
@@ -549,6 +550,7 @@ func saveCacheApplication(runAs, appID string, obj *types.Application) error {
 	}
 
 	app.Application = obj.DeepCopy()
+	blog.Warnf("save cache application(%s) time(%d)",appID, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 
@@ -693,7 +695,7 @@ func saveCacheTaskGroup(taskGroup *types.TaskGroup) error {
 	if !cacheMgr.isOK {
 		return nil
 	}
-
+	now := time.Now().UnixNano()
 	app := getCacheAppNode(taskGroup.RunAs, taskGroup.AppID)
 	if app == nil {
 		blog.V(3).Infof("app(%s.%s) not in cache", taskGroup.RunAs, taskGroup.AppID)
@@ -720,7 +722,7 @@ func saveCacheTaskGroup(taskGroup *types.TaskGroup) error {
 		blog.V(3).Infof("insert taskgroup(%s) in cache", tmpData.ID)
 		app.Taskgroups = append(app.Taskgroups, tmpData)
 	}
-
+	blog.Warnf("save cache taskgroup(%s) time(%d)", taskGroup.ID, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 
@@ -783,7 +785,7 @@ func saveCacheTask(task *types.Task) error {
 	if !cacheMgr.isOK {
 		return nil
 	}
-
+	now := time.Now().UnixNano()
 	taskGroupID := types.GetTaskGroupID(task.ID)
 	if taskGroupID == "" {
 		return errors.New("task id error")
@@ -819,7 +821,7 @@ func saveCacheTask(task *types.Task) error {
 			}
 		}
 	}
-
+	blog.Warnf("save cache task(%s) time(%d)", task.ID, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 
@@ -901,12 +903,13 @@ func saveCacheDeployment(obj *types.Deployment) error {
 	if !cacheMgr.isOK {
 		return nil
 	}
-
+	now := time.Now().UnixNano()
 	key := fmt.Sprintf("%s.%s", obj.ObjectMeta.NameSpace, obj.ObjectMeta.Name)
 	tmpData := obj.DeepCopy()
 	cacheMgr.mapLock.Lock()
 	cacheMgr.Deployments[key] = tmpData
 	cacheMgr.mapLock.Unlock()
+	blog.Warnf("save cache deployment(%s) time(%d)", key, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 

@@ -15,6 +15,7 @@ package etcd
 
 import (
 	"sync"
+	"time"
 
 	"bk-bcs/bcs-common/common/blog"
 	schStore "bk-bcs/bcs-mesos/bcs-scheduler/src/manager/store"
@@ -81,6 +82,7 @@ func (store *managerStore) CheckApplicationExist(application *types.Application)
 
 //SaveApplication save application data into db.
 func (store *managerStore) SaveApplication(application *types.Application) error {
+	now := time.Now().UnixNano()
 	err := store.checkNamespace(application.RunAs)
 	if err != nil {
 		return err
@@ -116,6 +118,7 @@ func (store *managerStore) SaveApplication(application *types.Application) error
 
 	application.ResourceVersion = v2Application.ResourceVersion
 	saveCacheApplication(application.RunAs, application.ID, application)
+	blog.Warnf("save application(%s) time(%d)", application.ID, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 
@@ -181,6 +184,7 @@ func (store *managerStore) ListApplications(runAs string) ([]*types.Application,
 
 //DeleteApplication remove the application from db by appID
 func (store *managerStore) DeleteApplication(runAs, appID string) error {
+	now := time.Now().UnixNano()
 	client := store.BkbcsClient.Applications(runAs)
 	err := client.Delete(appID, &metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
@@ -188,6 +192,7 @@ func (store *managerStore) DeleteApplication(runAs, appID string) error {
 	}
 
 	deleteAppCacheNode(runAs, appID)
+	blog.Warnf("delete application(%s) time(%d)", appID, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 

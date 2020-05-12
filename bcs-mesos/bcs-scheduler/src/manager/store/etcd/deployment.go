@@ -15,6 +15,7 @@ package etcd
 
 import (
 	"sync"
+	"time"
 
 	"bk-bcs/bcs-common/common/blog"
 	schStore "bk-bcs/bcs-mesos/bcs-scheduler/src/manager/store"
@@ -79,6 +80,7 @@ func (store *managerStore) CheckDeploymentExist(deployment *types.Deployment) (s
 }
 
 func (store *managerStore) SaveDeployment(deployment *types.Deployment) error {
+	now := time.Now().UnixNano()
 	err := store.checkNamespace(deployment.ObjectMeta.NameSpace)
 	if err != nil {
 		return err
@@ -114,6 +116,7 @@ func (store *managerStore) SaveDeployment(deployment *types.Deployment) error {
 
 	deployment.ObjectMeta.ResourceVersion = v2Dep.ResourceVersion
 	saveCacheDeployment(deployment)
+	blog.Warnf("save deployment(%s) time(%d)", deployment.ObjectMeta.Name, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 
@@ -161,6 +164,7 @@ func (store *managerStore) ListDeployments(ns string) ([]*types.Deployment, erro
 }
 
 func (store *managerStore) DeleteDeployment(ns, name string) error {
+	now := time.Now().UnixNano()
 	client := store.BkbcsClient.Deployments(ns)
 	err := client.Delete(name, &metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
@@ -168,6 +172,7 @@ func (store *managerStore) DeleteDeployment(ns, name string) error {
 	}
 
 	deleteCacheDeployment(ns, name)
+	blog.Warnf("delete application(%s) time(%d)", name, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 

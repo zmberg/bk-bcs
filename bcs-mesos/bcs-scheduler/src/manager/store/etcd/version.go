@@ -32,6 +32,7 @@ const VersionIdKey = "VersionId"
 
 //create version, produce version id
 func (store *managerStore) SaveVersion(version *types.Version) error {
+	now := time.Now().UnixNano()
 	version.Name = strconv.FormatInt(time.Now().UnixNano(), 10)
 	runAs := version.RunAs
 	if "" == runAs {
@@ -65,6 +66,7 @@ func (store *managerStore) SaveVersion(version *types.Version) error {
 		return err
 	}
 	saveCacheVersion(version.RunAs, version.ID, version)
+	blog.Warnf("save cache version(%s) time(%d)", version.Name, (time.Now().UnixNano()-now)/1000/1000)
 	return err
 }
 
@@ -157,6 +159,7 @@ func (store *managerStore) FetchVersion(runAs, versionId, versionNo string) (*ty
 }
 
 func (store *managerStore) DeleteVersion(runAs, versionId, versionNo string) error {
+	now := time.Now().UnixNano()
 	if "" == runAs {
 		runAs = defaultRunAs
 	}
@@ -165,7 +168,7 @@ func (store *managerStore) DeleteVersion(runAs, versionId, versionNo string) err
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
-
+	blog.Warnf("delete version(%s) time(%d)", versionNo, (time.Now().UnixNano()-now)/1000/1000)
 	return nil
 }
 
